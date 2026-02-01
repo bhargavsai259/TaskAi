@@ -1,5 +1,4 @@
-import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.core.config import settings
@@ -25,5 +24,12 @@ def health_check(db: Session = Depends(get_db)):
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
 
-if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
+# API to get users without a model
+@app.get("/users")
+def get_users(db: Session = Depends(get_db)):
+    try:
+        result = db.execute(text("SELECT * FROM users"))
+        users = [dict(row._mapping) for row in result.fetchall()]
+        return users
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
